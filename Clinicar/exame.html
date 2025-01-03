@@ -1,0 +1,302 @@
+<html><head><base href="/" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clínica Saúde & Bem-estar</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+}
+
+header {
+    background: linear-gradient(135deg, #0066cc, #0099ff);
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.logo {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    margin-bottom: 100px; /* Added to prevent footer overlap */
+}
+
+.exames-container {
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.exame-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.exame-item:last-child {
+    border-bottom: none;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-download {
+    background-color: #4CAF50;
+    color: white;
+    margin-right: 1rem;
+}
+
+.btn-delete {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+}
+
+.download-selected {
+    background-color: #0066cc;
+    color: white;
+    margin: 1rem 0;
+    display: none;
+}
+
+.download-selected.visible {
+    display: inline-block;
+}
+
+footer {
+    background: linear-gradient(135deg, #0066cc, #0099ff);
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
+
+.upload-section {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+#file-upload {
+    display: none;
+}
+
+.upload-btn {
+    background-color: #0066cc;
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-block;
+}
+
+@media (max-width: 768px) {
+    .container {
+        margin: 1rem auto 100px auto;
+    }
+    
+    .exame-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .btn {
+        margin: 0.5rem 0;
+    }
+
+    .checkbox-wrapper {
+        margin: 0.5rem 0;
+    }
+}
+</style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <svg width="50" height="50" viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="white"/>
+                <path d="M25 15v20M15 25h20" stroke="#0066cc" stroke-width="4"/>
+            </svg>
+            Clínica Saúde & Bem-estar
+        </div>
+        <p>Seus exames em um só lugar</p>
+    </header>
+
+    <div class="container">
+        <div class="upload-section">
+            <label for="file-upload" class="upload-btn">
+                Adicionar novo exame
+            </label>
+            <input type="file" id="file-upload" accept=".pdf,.jpg,.jpeg,.png">
+        </div>
+
+        <button id="download-selected" class="btn download-selected">
+            Baixar Selecionados
+        </button>
+
+        <div class="exames-container" id="exames-list">
+            <!-- Exames serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 Clínica Saúde & Bem-estar. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        class ExameManager {
+            constructor() {
+                this.exames = [];
+                this.init();
+            }
+
+            init() {
+                this.loadExames();
+                
+                document.getElementById('file-upload').addEventListener('change', (e) => {
+                    this.handleFileUpload(e);
+                });
+
+                document.getElementById('download-selected').addEventListener('click', () => {
+                    this.downloadSelectedExames();
+                });
+            }
+
+            loadExames() {
+                const savedExames = localStorage.getItem('exames');
+                if (savedExames) {
+                    this.exames = JSON.parse(savedExames);
+                    this.renderExames();
+                }
+            }
+
+            saveExames() {
+                localStorage.setItem('exames', JSON.stringify(this.exames));
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const exame = {
+                        id: Date.now(),
+                        name: file.name,
+                        data: e.target.result,
+                        date: new Date().toLocaleDateString(),
+                        selected: false
+                    };
+
+                    this.exames.push(exame);
+                    this.saveExames();
+                    this.renderExames();
+                };
+                reader.readAsDataURL(file);
+            }
+
+            deleteExame(id) {
+                this.exames = this.exames.filter(exame => exame.id !== id);
+                this.saveExames();
+                this.renderExames();
+            }
+
+            toggleExameSelection(id) {
+                const exame = this.exames.find(e => e.id === id);
+                if (exame) {
+                    exame.selected = !exame.selected;
+                    this.saveExames();
+                    this.updateDownloadSelectedButton();
+                }
+            }
+
+            updateDownloadSelectedButton() {
+                const downloadButton = document.getElementById('download-selected');
+                const hasSelectedExames = this.exames.some(exame => exame.selected);
+                downloadButton.classList.toggle('visible', hasSelectedExames);
+            }
+
+            downloadSelectedExames() {
+                const selectedExames = this.exames.filter(exame => exame.selected);
+                selectedExames.forEach(exame => {
+                    this.downloadExame(exame);
+                });
+            }
+
+            downloadExame(exame) {
+                const link = document.createElement('a');
+                link.href = exame.data;
+                link.download = exame.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            renderExames() {
+                const container = document.getElementById('exames-list');
+                container.innerHTML = '';
+
+                this.exames.forEach(exame => {
+                    const exameElement = document.createElement('div');
+                    exameElement.className = 'exame-item';
+                    exameElement.innerHTML = `
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" 
+                                id="checkbox-${exame.id}" 
+                                ${exame.selected ? 'checked' : ''}
+                                onchange="exameManager.toggleExameSelection(${exame.id})">
+                        </div>
+                        <div>
+                            <h3>${exame.name}</h3>
+                            <p>Data: ${exame.date}</p>
+                        </div>
+                        <div>
+                            <button class="btn btn-delete" onclick="exameManager.deleteExame(${exame.id})">
+                                Deletar
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(exameElement);
+                });
+                
+                this.updateDownloadSelectedButton();
+            }
+        }
+
+        const exameManager = new ExameManager();
+    </script>
+</body>
+</html>
